@@ -1,2 +1,2 @@
 # Repository
-Repository for MSXW and MSXiR (for images, icons, and cascading style sheets (CSS) files).
+Repository for MSXW and MSXiR (for images and icons files).
