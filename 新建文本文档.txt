@@ -125,6 +125,24 @@ https://gitee.com/MrShiehX/Repository/raw/master/25.png
 https://raw.githubusercontent.com/MrShiehX/Repository/master/26.png
 https://gitee.com/MrShiehX/Repository/raw/master/26.png
 
+27.png=https://github.com/MrShieh-X/more-gems-tools-armor/blob/master/README.md  &  https://github.com/MrShieh-X/more-gems-tools-armor/blob/master/README-zh.md :   First Crafting Recipe Of Item Upgrade Table
+https://raw.githubusercontent.com/MrShiehX/Repository/master/27.png
+https://gitee.com/MrShiehX/Repository/raw/master/27.png
+
+28.png=https://github.com/MrShieh-X/more-gems-tools-armor/blob/master/README.md  &  https://github.com/MrShieh-X/more-gems-tools-armor/blob/master/README-zh.md :   Second Crafting Recipe Of Item Upgrade Table
+https://raw.githubusercontent.com/MrShiehX/Repository/master/28.png
+https://gitee.com/MrShiehX/Repository/raw/master/28.png
+
+29.png=https://github.com/MrShieh-X/more-gems-tools-armor/blob/master/README.md  &  https://github.com/MrShieh-X/more-gems-tools-armor/blob/master/README-zh.md :   First Crafting Recipe Of Item Upgrade Material Shard
+https://raw.githubusercontent.com/MrShiehX/Repository/master/29.png
+https://gitee.com/MrShiehX/Repository/raw/master/29.png
+
+30.png=https://github.com/MrShieh-X/more-gems-tools-armor/blob/master/README.md  &  https://github.com/MrShieh-X/more-gems-tools-armor/blob/master/README-zh.md :   Second Crafting Recipe Of Item Upgrade Material Shard
+https://raw.githubusercontent.com/MrShiehX/Repository/master/30.png
+https://gitee.com/MrShiehX/Repository/raw/master/30.png
+
+
+
 
 
 
