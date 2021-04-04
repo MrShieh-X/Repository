@@ -149,6 +149,10 @@ https://gitee.com/MrShiehX/Repository/raw/master/31.png
 https://raw.githubusercontent.com/MrShiehX/Repository/master/32.png
 https://gitee.com/MrShiehX/Repository/raw/master/32.png
 
+33.png=https://github.com/MrShieh-X/mscrserver/blob/master/README.md  & https://github.com/MrShieh-X/mscrserver/blob/master/README-zh.md :   Configuration File Content
+https://raw.githubusercontent.com/MrShiehX/Repository/master/33.png
+https://gitee.com/MrShiehX/Repository/raw/master/33.png
+
 
 
 
