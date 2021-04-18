@@ -153,6 +153,10 @@ https://gitee.com/MrShiehX/Repository/raw/master/32.png
 https://raw.githubusercontent.com/MrShiehX/Repository/master/33.png
 https://gitee.com/MrShiehX/Repository/raw/master/33.png
 
+34.png=/softwares/softwares.png
+https://raw.githubusercontent.com/MrShiehX/Repository/master/34.png
+https://gitee.com/MrShiehX/Repository/raw/master/34.png
+
 
 
 
