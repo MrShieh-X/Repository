@@ -157,6 +157,22 @@ https://gitee.com/MrShiehX/Repository/raw/master/33.png
 https://raw.githubusercontent.com/MrShiehX/Repository/master/34.png
 https://gitee.com/MrShiehX/Repository/raw/master/34.png
 
+35.png=/softwares/mschatroom.png
+https://raw.githubusercontent.com/MrShiehX/Repository/master/35.png
+https://gitee.com/MrShiehX/Repository/raw/master/35.png
+
+36.png=/softwares/msfilemanager.png
+https://raw.githubusercontent.com/MrShiehX/Repository/master/36.png
+https://gitee.com/MrShiehX/Repository/raw/master/36.png
+
+37.png=/softwares/minecraft-versions-viewer.png
+https://raw.githubusercontent.com/MrShiehX/Repository/master/7.png
+https://gitee.com/MrShiehX/Repository/raw/master/37.png
+
+
+38.png=/softwares/minecraft-launcher-x.png
+https://raw.githubusercontent.com/MrShiehX/Repository/master/38.png
+https://gitee.com/MrShiehX/Repository/raw/master/38.png
 
 
 
