@@ -1,0 +1,181 @@
+（？）：不确定要不要弄
+命令标识：毫秒或者其他，为了服务器叫客户端做事情或者客户端叫服务器做事情的临时标识，类似于叫服务器发文件，然后接收时为了准确是哪一个的命令的标识
+
+20210522 ：
+颠覆大部分：不再要mysql，用put server的方式来进行操作
+
+每个账户独立一个空间，但chat_avatars通用，头像不要avatar_xxxxxxxxxx，直接avatar
+
+20210524：
+昵称、性别、个性签名不要json，要直接的，和账号、密码、邮箱地址、头像在同一个地方，方式修改失败，全部infomation都没了，想一下还要加什么信息，现在弄了以后没得弄（不一定，弄的话可以试一下“mysql表格升级”）。性别：gender ENUM('MALE','FEMALE')；弄friends，存储好友，类型用mysql的数组或string（或jsonarray）；弄token；弄number_id，类型long，或longer than long，值：如果数据库里没有，则是1，如果有，则获得数据库的最后一个（next方法？），然后加一，作用是：修改账号，防止别人不见了这个修改了账号的好友，别人添加的时候也是这个，存储这个；blocked_users，类型用mysql的数组或string（或jsonarray），黑名单
+
+create table `usersab` (
+	`number_id` int unsigned not null,
+	`email` varchar(1000) not null,
+	`account` varchar(1000) not null,
+	`password` varchar(1000) not null,
+	`avatar` mediumblob,
+	`messages` text(4294967295),
+	`nickname` char(128),
+	`gender` enum('MALE','FEMALE'),
+	`biography` varchar(512),
+	`friends` text(65535),
+	`token` char(255),
+	`blocked_users` text(65535),
+	`registered_time` int unsigned not null,
+	`friends_add_applications` text(65535),
+	`imei` char(17),
+	`device_model` char(255),
+	`logged_in_device_imeis` text(4000),
+	PRIMARY KEY(number_id)
+);
+
+                pre.setLong(1, 3553413882L);
+                pre.setString(2,"3553413882@qq.com");
+                pre.setString(3,"mrshiehx");
+                pre.setString(4,"wwwwwww");
+                pre.setBinaryStream(5,null);
+                pre.setString(6,"{messages}");
+                pre.setString(7,"MrShiehX");
+                pre.setString(8,"FEMALE");
+                pre.setString(9,"WHAT IS UP");
+                pre.setString(10,"[FRIENDS]");
+                pre.setString(11,"TOKEN");
+                pre.setString(12,"[BLOCKED_USERS]");
+                pre.setLong(13,System.currentTimeMillis());
+                pre.setString(14,"[FRIENDS_APP_APPLICATIONS]");
+                pre.setString(15,"0000IMEI0000");
+                pre.setString(16,"DEVICE MODEL");
+                pre.setString(17,"[LOGGED IN DEVICE IMEIS]");
+
+执行操作时看看对方的黑名单有没有自己，没有的话执行，有的话不执行，当这个账户已注销
+
+对于使用邮箱验证码登录和注册：不再由client发送验证码，把发送验证码的指令发给server，server弄个bean叫Captcha，这个bean有这些内容：String captcha;int restSeconds(剩余时间，原来是60，每一秒就减一，到0就从MainClass（MSCRServer）的captchaMap（一个String,Captcha的Map）里移除);，发送之后client也要倒数。如果没倒数完继续叫server发验证码，server要返回还剩下多少秒后才能重新获取，客户端Toast it，并且获得验证码的button也要一个倒数的，秒数是服务器返回的。输入正确验证码后，客户端put去server，server要么返回验证码错误，要么返回一个email+一个token的jsonobject，绝对不能返回密码。注：长期不发送验证码会重新连接服务器，有时可能失败，导致服务器卡住，要try again。注2：发送邮件乱码。注3：加多一些信息上去邮件内，比如说：如非本人操作，请忽略该邮件。
+
+绝对不能返回密码。
+
+blocked_users，添加好友时查看对方的blocked_users是否有自己，有的话不给显示
+
+添加好友先检测对方的黑名单有没有自己（在服务器），有的话服务器不执行操作（不返回任何东西），限制添加好友的最大数量为5000，因为：friends最大65536，一个number_id最大有10位数，加上一对双引号，和一个逗号，等于13，(65535-2（jsonarray开头和结束的中括号）)/13=5041，为了某些特殊情况，所以就5000
+
+获得别人的information，服务器看看对方的黑名单有没有，没有的话给他，有的话不给，当这个账户已注销
+
+一年才能修改一个账号，修改之前要输入密码，至于修改之后好友的好友列表可能没有这个人的问题，请看number_id，至于时间，获得服务器的时间
+
+token，一串用特殊手段生成出来的字符串，以后登录之后不用存储账号密码，账号密码put to server之后获得token，存储它，下次对性别、昵称、个性签名、friends、发送消息操作时不用账号密码，用token；获得别人的性别、昵称、个性签名用账号，不用token；连接communicator时发送埋token，以服务器接收消息时遍历它，找到session；新的密码，新的token
+
+服务器不要map，要两个list
+服务器顺便开put server
+
+新消息提醒，x条新消息，像微信的小红点
+
+添加、删除好友功能
+
+操作friends_add_applications时查看他的string的bytes的length是否快到65535，如果到65000，就删除全部
+
+发送好友申请，记录在client和server（database）都存一份，发送时，server看看另一个client（target client）在不在线，在线的话直接发送好友申请，并且在database的friends_add_applications添加（一个jsonobject包括时间毫秒，number_id，添加的信息（why to add），一个int存储状态：0为未处理，1为同意了，2为拒绝了）一个，不在线发到离线消息内：一定要包括from，toClient，做什么，申请消息（why to add），发送之后和在线一样弄friends_add_applications。手机查看记录时按时间排序，代码看MSFileManager的文件时间排序
+
+聊天列表按最后一条消息时间排序
+
+不再开源（弄个mschatroom-unopensource之类的），服务端和客户端加个连接密码之类的，防止别人连接
+
+recyclerView滑动消失，viewHolder.setIsRecyclable(false); | bbs.csdn.net/topics/394370832（或者直接不要recyclerView）
+
+想一下put server可以应用在哪里（可以在发送文件，put to服务器之后等待返回，返回了执行相应的代码）
+
+后台通知，杀了后台也行那种，youtube可以，但它是谷歌的，有谷歌的相关服务
+
+弄个Account类，里面又有update和get方法，昵称、性别、个性签名等
+
+消息内的URL
+
+弄群聊
+
+二维码名片（不要url，要自己的内容 | 要url，让别人进的去 | 要个scheme）推荐scheme
+
+（？）单设备登录，其他设备登录自己要自动退出
+
+进去再连接服务器
+
+账号离线存储，用序列化的Account，包括别人的，information.json
+
+gender用mysql的enum
+
+存储注册时间
+
+（？）更改改邮箱
+
+多账户登录，随便切换
+
+删除多账户（或登录过的账户）的聊天记录、账户信息等（在files内的）的功能，前提是：每次登录要将这些账户存储下来，以jsonarray，删除账户时默认删除这些内容
+
+发送信息时检查对方账户是否存在，如果不存在，返回报错
+
+发送消息检查对方账户的好友列表有没有，没有就说删了
+
+发送消息检查对方账户的黑名单有没有，有就说拉黑了
+
+为了方便随时更换chatscreen的chatlist的view类型，弄一个ChatsListProvider，代码：
+public abstract class ChatsListProvider<V> {
+    public V view;
+    private List<MessageItem> list;
+    public ChatsListProvider(V view){
+        this.view=view;
+    }
+    public abstract void add();
+    public abstract void delete(int index);
+    public abstract void updateList(List<MessageItem>list);
+    public List<MessageItem> getList(){
+        return list;
+    }
+    public void modifyList(List<MessageItem> list){
+        this.list=list;
+        updateList(list);
+    }
+}
+继承:
+public class ChatsListRecyclerList extends ChatsListProvider<RecyclerView>
+
+调用mainscreen，chatscreen之类的messageReceived，改用interface，不要((MainScreen...)context).messageReceived();
+
+不要communicator.setContext，麻烦
+
+界面：bottom navigation：学微信下面的，第一个是chats，第二个是通讯录，第三个“我”（暂名）；修改用户信息界面不要从settings里进去，从settings内移除；在“个人界面”里进去修改用户信息界面
+
+每次进入、执行需要token的操作，都要检测token在服务器是否存在，在这个JSONObject内存放账号，以免如果被别的设备登录，可以使用账号获得并返回登录设备，不存在就說账户不存在，退出登录；存在就返回新设备的model
+
+本地不存密码，只存账号与token
+
+token需要的内容：imei、账号、密码、number_id
+
+logged_in_device_imeis存储登录过该账户的设备，是一个jsonarray，里面的jsonobject包含：imei，model，最后一次登录时间（不是使用token的时间，而是在登录界面登录的时间）
+
+登录部分：{
+	if(登录时，logged_in_device_imeis里面没有当前设备的imei){
+		if(logged_in_device_imeis的string的bytes的长度>=3500){
+			删除jsonarray的时间最早的jsonobject；
+		}
+	}
+}
+,
+{
+---------------开始---------------
+要给服务器imei，账号和密码
+服务器：收到imei，检查imei和sql的是否一致，如果一致，直接登录，不一致：叫服务器检测logged_in_device_imeis是否有本机的imei，有的话：修改device_model、reset并返回token，没有：更改返回已在新设备登录，要验证：
+1.叫当前登录了的设备授权：
+告诉服务器我要这样做（json需要imei和model，为了已经登录了的设备同意后，服务器修改imei和model），服务器要弄一个命令标识，问客户端是否是否授权（要显示授权的设备model），客户端弄了要返回（imei（告诉服务器我就是我，不是别人）和标识），服务器收到了要修改imei和model，修改完成用同一个标识叫客户端退出登录（要说型号），要返回成功或失败（是否授权）
+
+2.扫二维码授权：
+设备A：当前准备登录的设备
+设备B：当前已经登录的设备
+a叫服务器弄（发送imei和型号），服务器收到之后，弄一个命令标识a，二维码（二维码包括新设备型号和命令标识a），返回给a，给b扫，b扫了后，告诉服务器（本机imei（告诉服务器我就是b）、标识a），我要授权，然后服务器收到了要修改imei和model，修改完成用同一个标识叫b退出登录（要说型号），要返回成功或失败（是否授权）
+---------------结束---------------
+}
+
+新界面：“我”（暂名），有自己的信息（头像、昵称、账号）、设置
+
+两种主题(ui(ui模式))：{
+1.Bottom Navigation：像微信下面的
+2.Navigation像play store左边划出来的，也像"TG"
+可以在设置里修改，默认是1Bottom Navigation
+}
