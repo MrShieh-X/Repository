@@ -9,7 +9,7 @@
 20210524：
 昵称、性别、个性签名不要json，要直接的，和账号、密码、邮箱地址、头像在同一个地方，方式修改失败，全部infomation都没了，想一下还要加什么信息，现在弄了以后没得弄（不一定，弄的话可以试一下“mysql表格升级”）。性别：gender ENUM('MALE','FEMALE')；弄friends，存储好友，类型用mysql的数组或string（或jsonarray）；弄token；弄number_id，类型long，或longer than long，值：如果数据库里没有，则是1，如果有，则获得数据库的最后一个（next方法？），然后加一，作用是：修改账号，防止别人不见了这个修改了账号的好友，别人添加的时候也是这个，存储这个；blocked_users，类型用mysql的数组或string（或jsonarray），黑名单
 
-create table `usersab` (
+create table `usersa` (
 	`number_id` int unsigned not null,
 	`email` varchar(1000) not null,
 	`account` varchar(1000) not null,
@@ -17,7 +17,7 @@ create table `usersab` (
 	`avatar` mediumblob,
 	`messages` text(4294967295),
 	`nickname` char(128),
-	`gender` enum('MALE','FEMALE'),
+	`gender` enum('male','female'),
 	`biography` varchar(512),
 	`friends` text(65535),
 	`token` char(255),
@@ -50,7 +50,7 @@ create table `usersab` (
 
 执行操作时看看对方的黑名单有没有自己，没有的话执行，有的话不执行，当这个账户已注销
 
-对于使用邮箱验证码登录和注册：不再由client发送验证码，把发送验证码的指令发给server，server弄个bean叫Captcha，这个bean有这些内容：String captcha;int restSeconds(剩余时间，原来是60，每一秒就减一，到0就从MainClass（MSCRServer）的captchaMap（一个String,Captcha的Map）里移除);，发送之后client也要倒数。如果没倒数完继续叫server发验证码，server要返回还剩下多少秒后才能重新获取，客户端Toast it，并且获得验证码的button也要一个倒数的，秒数是服务器返回的。输入正确验证码后，客户端put去server，server要么返回验证码错误，要么返回一个email+一个token的jsonobject，绝对不能返回密码。注：长期不发送验证码会重新连接服务器，有时可能失败，导致服务器卡住，要try again。注2：发送邮件乱码。注3：加多一些信息上去邮件内，比如说：如非本人操作，请忽略该邮件。
+对于使用邮箱验证码登录和注册：不再由client发送验证码，把发送验证码的指令发给server，server弄个bean叫Captcha，这个bean有这些内容：String captcha;int restSeconds(剩余时间，原来是60，每一秒就减一，到0就从MainClass（MSCRServer）的captchaMap（一个String,Captcha的Map）里移除);，发送之后client也要倒数。如果没倒数完继续叫server发验证码，server要返回还剩下多少秒后才能重新获取，客户端Toast it，并且获得验证码的button也要一个倒数的，秒数是服务器返回的。输入正确验证码后，客户端put去server，server要么返回验证码错误，要么返回一个email+一个token的jsonobject，绝对不能返回密码。注：长期不发送验证码会重新连接服务器，有时可能失败，导致服务器卡住，要try again。注3：加多一些信息上去邮件内，比如说：如非本人操作，请忽略该邮件。
 
 绝对不能返回密码。
 
@@ -175,7 +175,40 @@ a叫服务器弄（发送imei和型号），服务器收到之后，弄一个命
 新界面：“我”（暂名），有自己的信息（头像、昵称、账号）、设置
 
 两种主题(ui(ui模式))：{
-1.Bottom Navigation：像微信下面的
-2.Navigation像play store左边划出来的，也像"TG"
-可以在设置里修改，默认是1Bottom Navigation
+1.Bottom Navigation（底部导航）：像微信下面的
+2.Navigation Drawer（左侧滑出导航）：像play store左边划出来的，也像"TG"
+可以在设置里修改，临时决定默认是2Navigation Drawer（左侧滑出导航）
+}
+
+登录时，客户端要把账号或邮箱变成小写再发给服务器，要发model和imei
+
+切换主题和语言要像MT管理器一样马上切换，不要重启，切换主题试一下修改主题之后马上setTheme()
+
+newIdea（多线程处理文件或下载文件）：{
+弄一个bean：ExecutesFileSingleBytes：
+	int number（序号）;
+	byte[] bytes;
+interface：OnExecutedBytes：
+	void singleDone(int number, byte[]bytes); 
+	void allDone(int number, byte[][] bytess);
+	多线程，把文件按每个多少多少bytes来拆分，弄一个thread list，把这些thread都放在这里，每一个thread完成，触发interface：OnExecutedBytes的singleDone（singleDone内要对ProgressDialog进行+1操作），自己检测其他threads是否完成，如果其他threads全部完成，就触发interface：OnExecutedFile的方法allDone；
+	服务器弄个map（String，SplitFileBytes（
+		boolean splitting;
+		int number;
+		byte[][] bytess;
+	））；
+	下载服务器存储的文件：client先问服务器一共拆分成多少个bytes，服务器回应之后就开始拆分，然后客户端从0开始逐个逐个向服务器下载，服务器弄个线程，如果服务器检测到splitting为true，就等它，怎样等它自己写，服务器检测到下载完之后，就从map内删除；
+	客户端处理、上传文件，弄个ProgressDialog，长度为“number”，每次执行singleDone都要加一
+}
+
+关于put to server、错误处理等：{
+server弄一个map（Integer（存放CODE）,Operation（interface，方法：String（返回给client的内容） operate(JSONObject jsonObject);）），收到operate时解析到code，如果这个code对应的Operation为null，返回说没有这样的操作，如果有，就在map里获得Operation，执行operate方法，此方法返回值（JSONObject，String）要返回给client。
+operate方法：{
+正常执行返回jsonobject（with errorCode：0（ignoreable），或者其他要返回的东西）
+执行遇到错误，返回jsonobject（with errorCode：Error（enum，里面存放错误代码，客户端需要存放错误text的stringId）里的错误代码，如果需要，返回其他的参数
+
+客户端弄一个map（Integer（存放错误CODE），ErrorHandler（interface，方法：void handle(Context(或Activity) context, JSONObject jsonObject);））
+
+客户端收到jsonobject，如果errorCode==0，继续执行，如果errorCode!=0，就通过错误代码从map内获得ErrorHandler，执行其handle方法，最后return;这个方法（结束这个方法）
+}
 }
