@@ -7,28 +7,10 @@
 每个账户独立一个空间，但chat_avatars通用，头像不要avatar_xxxxxxxxxx，直接avatar
 
 20210524：
-昵称、性别、个性签名不要json，要直接的，和账号、密码、邮箱地址、头像在同一个地方，方式修改失败，全部infomation都没了，想一下还要加什么信息，现在弄了以后没得弄（不一定，弄的话可以试一下“mysql表格升级”）。性别：gender ENUM('MALE','FEMALE')；弄friends，存储好友，类型用mysql的数组或string（或jsonarray）；弄token；弄number_id，类型long，或longer than long，值：如果数据库里没有，则是1，如果有，则获得数据库的最后一个（next方法？），然后加一，作用是：修改账号，防止别人不见了这个修改了账号的好友，别人添加的时候也是这个，存储这个；blocked_users，类型用mysql的数组或string（或jsonarray），黑名单
 
-create table `usersa` (
-	`number_id` int unsigned not null,
-	`email` varchar(1000) not null,
-	`account` varchar(1000) not null,
-	`password` varchar(1000) not null,
-	`avatar` mediumblob,
-	`messages` text(4294967295),
-	`nickname` char(128),
-	`gender` enum('male','female'),
-	`biography` varchar(512),
-	`friends` text(65535),
-	`token` char(255),
-	`blocked_users` text(65535),
-	`registered_time` int unsigned not null,
-	`friends_add_applications` text(65535),
-	`imei` char(17),
-	`device_model` char(255),
-	`logged_in_device_imeis` text(4000),
-	PRIMARY KEY(number_id)
-);
+use mscr;
+drop table usersa;
+create table `usersa` (`number_id` int unsigned not null,`email` varchar(1000) not null,`account` varchar(1000) not null,`password` varchar(1000) not null,`avatar` mediumblob,`messages` text(4294967295),`nickname` char(128),`gender` enum('male','female'),`biography` varchar(512),`friends` text(65535),`token` char(255),`blocked_users` text(65535),`registered_time` bigint unsigned not null,`friends_add_applications` text(65535),`device_id` char(32),`device_model` char(255),`logged_in_devices` text(4000),PRIMARY KEY(number_id));
 
                 pre.setLong(1, 3553413882L);
                 pre.setString(2,"3553413882@qq.com");
@@ -44,13 +26,11 @@ create table `usersa` (
                 pre.setString(12,"[BLOCKED_USERS]");
                 pre.setLong(13,System.currentTimeMillis());
                 pre.setString(14,"[FRIENDS_APP_APPLICATIONS]");
-                pre.setString(15,"0000IMEI0000");
+                pre.setString(15,"device_id");
                 pre.setString(16,"DEVICE MODEL");
                 pre.setString(17,"[LOGGED IN DEVICE IMEIS]");
 
 执行操作时看看对方的黑名单有没有自己，没有的话执行，有的话不执行，当这个账户已注销
-
-对于使用邮箱验证码登录和注册：不再由client发送验证码，把发送验证码的指令发给server，server弄个bean叫Captcha，这个bean有这些内容：String captcha;int restSeconds(剩余时间，原来是60，每一秒就减一，到0就从MainClass（MSCRServer）的captchaMap（一个String,Captcha的Map）里移除);，发送之后client也要倒数。如果没倒数完继续叫server发验证码，server要返回还剩下多少秒后才能重新获取，客户端Toast it，并且获得验证码的button也要一个倒数的，秒数是服务器返回的。输入正确验证码后，客户端put去server，server要么返回验证码错误，要么返回一个email+一个token的jsonobject，绝对不能返回密码。注：长期不发送验证码会重新连接服务器，有时可能失败，导致服务器卡住，要try again。注3：加多一些信息上去邮件内，比如说：如非本人操作，请忽略该邮件。
 
 绝对不能返回密码。
 
@@ -58,7 +38,7 @@ blocked_users，添加好友时查看对方的blocked_users是否有自己，有
 
 添加好友先检测对方的黑名单有没有自己（在服务器），有的话服务器不执行操作（不返回任何东西），限制添加好友的最大数量为5000，因为：friends最大65536，一个number_id最大有10位数，加上一对双引号，和一个逗号，等于13，(65535-2（jsonarray开头和结束的中括号）)/13=5041，为了某些特殊情况，所以就5000
 
-获得别人的information，服务器看看对方的黑名单有没有，没有的话给他，有的话不给，当这个账户已注销
+获得别人的information，服务器看看对方的黑名单有没有，没有的话给他，有的话不给，当作这个账户已注销
 
 一年才能修改一个账号，修改之前要输入密码，至于修改之后好友的好友列表可能没有这个人的问题，请看number_id，至于时间，获得服务器的时间
 
@@ -75,7 +55,7 @@ token，一串用特殊手段生成出来的字符串，以后登录之后不用
 
 发送好友申请，记录在client和server（database）都存一份，发送时，server看看另一个client（target client）在不在线，在线的话直接发送好友申请，并且在database的friends_add_applications添加（一个jsonobject包括时间毫秒，number_id，添加的信息（why to add），一个int存储状态：0为未处理，1为同意了，2为拒绝了）一个，不在线发到离线消息内：一定要包括from，toClient，做什么，申请消息（why to add），发送之后和在线一样弄friends_add_applications。手机查看记录时按时间排序，代码看MSFileManager的文件时间排序
 
-聊天列表按最后一条消息时间排序
+聊天列表需要像微信一样排先后顺序，按于某人的最后一条聊天消息的时间排序
 
 不再开源（弄个mschatroom-unopensource之类的），服务端和客户端加个连接密码之类的，防止别人连接
 
@@ -87,7 +67,7 @@ recyclerView滑动消失，viewHolder.setIsRecyclable(false); | bbs.csdn.net/top
 
 弄个Account类，里面又有update和get方法，昵称、性别、个性签名等
 
-消息内的URL
+消息内的URL，弄个像微信一样的蓝色或者其他的明显的标志，点击到默认浏览器打开，或者不转跳，在mscr内直接调用浏览器的组件访问该URL
 
 弄群聊
 
@@ -97,13 +77,9 @@ recyclerView滑动消失，viewHolder.setIsRecyclable(false); | bbs.csdn.net/top
 
 进去再连接服务器
 
-账号离线存储，用序列化的Account，包括别人的，information.json
+账号离线存储，用序列化的Account，包括别人的，序列化的User或information.json，Account（extends User）：存储自己的信息包括一些api，可以进行操作；User：存储别人的信息，不包括操作的api
 
-gender用mysql的enum
-
-存储注册时间
-
-（？）更改改邮箱
+（？）更改邮箱
 
 多账户登录，随便切换
 
@@ -111,9 +87,9 @@ gender用mysql的enum
 
 发送信息时检查对方账户是否存在，如果不存在，返回报错
 
-发送消息检查对方账户的好友列表有没有，没有就说删了
+发送消息检查对方账户的好友列表有没有自己，没有就说删了
 
-发送消息检查对方账户的黑名单有没有，有就说拉黑了
+发送消息检查对方账户的黑名单有没有自己，有就说拉黑了
 
 为了方便随时更换chatscreen的chatlist的view类型，弄一个ChatsListProvider，代码：
 public abstract class ChatsListProvider<V> {
@@ -140,19 +116,15 @@ public class ChatsListRecyclerList extends ChatsListProvider<RecyclerView>
 
 不要communicator.setContext，麻烦
 
-界面：bottom navigation：学微信下面的，第一个是chats，第二个是通讯录，第三个“我”（暂名）；修改用户信息界面不要从settings里进去，从settings内移除；在“个人界面”里进去修改用户信息界面
-
-每次进入、执行需要token的操作，都要检测token在服务器是否存在，在这个JSONObject内存放账号，以免如果被别的设备登录，可以使用账号获得并返回登录设备，不存在就說账户不存在，退出登录；存在就返回新设备的model
+每次进入以及执行需要token的操作，都要检测token在服务器是否存在，在这个JSONObject内存放账号，以免如果被别的设备登录，可以使用账号获得已经登录的设备的名称并返回；不存在就說账户不存在，退出登录；存在就返回新设备的model
 
 本地不存密码，只存账号与token
 
-token需要的内容：imei、账号、密码、number_id
-
-logged_in_device_imeis存储登录过该账户的设备，是一个jsonarray，里面的jsonobject包含：imei，model，最后一次登录时间（不是使用token的时间，而是在登录界面登录的时间）
+logged_in_devices存储登录过该账户的设备，是一个jsonarray，里面的jsonobject包含：imei(device_id)，model，最后一次登录时间（不是使用token的时间，而是在登录界面登录的时间）
 
 登录部分：{
-	if(登录时，logged_in_device_imeis里面没有当前设备的imei){
-		if(logged_in_device_imeis的string的bytes的长度>=3500){
+	if(登录时，logged_in_devices里面没有当前设备的imei){
+		if(logged_in_devices的string的bytes的长度>=3500){
 			删除jsonarray的时间最早的jsonobject；
 		}
 	}
@@ -160,8 +132,8 @@ logged_in_device_imeis存储登录过该账户的设备，是一个jsonarray，�
 ,
 {
 ---------------开始---------------
-要给服务器imei，账号和密码
-服务器：收到imei，检查imei和sql的是否一致，如果一致，直接登录，不一致：叫服务器检测logged_in_device_imeis是否有本机的imei，有的话：修改device_model、reset并返回token，没有：更改返回已在新设备登录，要验证：
+要给服务器imei(device_id)，账号和密码
+服务器：收到imei，检查imei和sql的imei是否一致，如果一致，直接登录，不一致：叫服务器检测logged_in_devices是否有本机的imei，有的话：修改device_model、充值token并返回token，没有：更改返回已在新设备登录，要验证：
 1.叫当前登录了的设备授权：
 告诉服务器我要这样做（json需要imei和model，为了已经登录了的设备同意后，服务器修改imei和model），服务器要弄一个命令标识，问客户端是否是否授权（要显示授权的设备model），客户端弄了要返回（imei（告诉服务器我就是我，不是别人）和标识），服务器收到了要修改imei和model，修改完成用同一个标识叫客户端退出登录（要说型号），要返回成功或失败（是否授权）
 
@@ -172,17 +144,9 @@ a叫服务器弄（发送imei和型号），服务器收到之后，弄一个命
 ---------------结束---------------
 }
 
-新界面：“我”（暂名），有自己的信息（头像、昵称、账号）、设置
-
-两种主题(ui(ui模式))：{
-1.Bottom Navigation（底部导航）：像微信下面的
-2.Navigation Drawer（左侧滑出导航）：像play store左边划出来的，也像"TG"
-可以在设置里修改，临时决定默认是2Navigation Drawer（左侧滑出导航）
-}
-
 登录时，客户端要把账号或邮箱变成小写再发给服务器，要发model和imei
 
-切换主题和语言要像MT管理器一样马上切换，不要重启，切换主题试一下修改主题之后马上setTheme()
+切换主题和语言要像MT管理器一样马上切换，不要重启，切换主题试一下修改主题之后马上recreate()（修改语言或主题也生效）
 
 newIdea（多线程处理文件或下载文件）：{
 弄一个bean：ExecutesFileSingleBytes：
@@ -201,14 +165,42 @@ interface：OnExecutedBytes：
 	客户端处理、上传文件，弄个ProgressDialog，长度为“number”，每次执行singleDone都要加一
 }
 
+存储聊天记录的文件是要jsonobject不要开头和结尾的{和}，写入时直接写,"key":"value"，读取时给开头和结尾加上{和}在解析jsonobject。进入程序就开多线程来解析，解析完存储成全局的Map（Integer（numberId），List<MessageItem>），要读取该Map时用一个方法，此方法检测这个map是否为空，否的话返回该Map，是为空的话多线程解析文件，注意线程要synchronized。每次发送聊天都要在这个Map的对应的List<MessageItem>添加该message，也要把该message写入到文件内。进入ChatScreen时不要解析文件来获得聊天记录，浪费时间，要那个Map里的List<MessageItem>
+
+四张照片：亮主题底部导航；亮主题左侧滑出导航；暗主题底部导航；暗主题左侧滑出导航
+
+//新界面：“我”（暂名），有自己的信息（头像、昵称、账号）、设置
+
+//两种主题(ui(ui模式))：{
+//1.Bottom Navigation（底部导航）：像微信下面的
+//2.Navigation Drawer（左侧滑出导航）：像play store左边划出来的，也像"TG"
+//可以在设置里修改，临时决定默认是2Navigation Drawer（左侧滑出导航）
+//}
+
+//图标：聊天界面：chat；设置：settings；“我”：assignment；通讯录：contacts或perm contact
+
+//（主界面）从设置返回后，检测临时存储的主题和语言和shared_preferences的语言和主题是否一致，只要一个不一样，就recreate
+//昵称、性别、个性签名不要json，要直接的，和账号、密码、邮箱地址、头像在同一个地方，方式修改失败，全部infomation都没了，想一下还要加什么信息，现在弄了以后没得弄（不一定，弄的话可以试一下“mysql表格升级”）。性别：gender ENUM('MALE','FEMALE')；弄friends，存储好友，类型用mysql的数组或string（或jsonarray）；弄token；弄number_id，类型long，或longer than long，值：如果数据库里没有，则是1，如果有，则获得数据库的最后一个（next方法？），然后加一，作用是：修改账号，防止别人不见了这个修改了账号的好友，别人添加的时候也是这个，存储这个；blocked_users，类型用mysql的数组或string（或jsonarray），黑名单
+
+//对于使用邮箱验证码登录和注册：不再由client发送验证码，把发送验证码的指令发给server，server弄个bean叫Captcha，这个bean有这些内容：String captcha;int restSeconds(剩余时间，原来是60，每一秒就减一，到0就从MainClass（MSCRServer）的captchaMap（一个String,Captcha的Map）里移除);，发送之后client也要倒数。如果没倒数完继续叫server发验证码，server要返回还剩下多少秒后才能重新获取，客户端Toast it，并且获得验证码的button也要一个倒数的，秒数是服务器返回的。输入正确验证码后，客户端put去server，server要么返回验证码错误，要么返回一个email+一个token的jsonobject，绝对不能返回密码。注：长期不发送验证码会重新连接服务器，有时可能失败，导致服务器卡住，要try again。注3：加多一些信息上去邮件内，比如说：如非本人操作，请忽略该邮件。
+
+//gender用mysql的enum
+
+//存储注册时间
+
+//界面：bottom navigation：学微信下面的，第一个是chats，第二个是通讯录，第三个“我”（暂名）；修改用户信息界面不要从settings里进去，从settings内移除；在“个人界面”里进去修改用户信息界面
+
+//token需要的内容：imei(device_id)、账号、密码、number_id
+
+
 关于put to server、错误处理等：{
-server弄一个map（Integer（存放CODE）,Operation（interface，方法：String（返回给client的内容） operate(JSONObject jsonObject);）），收到operate时解析到code，如果这个code对应的Operation为null，返回说没有这样的操作，如果有，就在map里获得Operation，执行operate方法，此方法返回值（JSONObject，String）要返回给client。
+//server弄一个map（Integer（存放CODE）,Operation（interface，方法：String（返回给client的内容） operate(JSONObject jsonObject);）），收到operate时解析到code，如果这个code对应的Operation为null，返回说没有这样的操作，如果有，就在map里获得Operation，执行operate方法，此方法返回值（JSONObject，String）要返回给client。
 operate方法：{
-正常执行返回jsonobject（with errorCode：0（ignoreable），或者其他要返回的东西）
-执行遇到错误，返回jsonobject（with errorCode：Error（enum，里面存放错误代码，客户端需要存放错误text的stringId）里的错误代码，如果需要，返回其他的参数
+//正常执行返回jsonobject（with errorCode：0（ignoreable），或者其他要返回的东西）
+//执行遇到错误，返回jsonobject（with errorCode：Error（enum，里面存放错误代码，客户端需要存放错误text的stringId）里的错误代码，如果需要，返回其他的参数
 
-客户端弄一个map（Integer（存放错误CODE），ErrorHandler（interface，方法：void handle(Context(或Activity) context, JSONObject jsonObject);））
+//客户端弄一个map（Integer（存放错误CODE），ErrorHandler（interface，方法：void handle(Context(或Activity) context, JSONObject jsonObject);））
 
-客户端收到jsonobject，如果errorCode==0，继续执行，如果errorCode!=0，就通过错误代码从map内获得ErrorHandler，执行其handle方法，最后return;这个方法（结束这个方法）
+//客户端收到jsonobject，如果errorCode==0，继续执行，如果errorCode!=0，就通过错误代码从map内获得ErrorHandler，执行其handle方法，最后return;这个方法（结束这个方法）
 }
 }
