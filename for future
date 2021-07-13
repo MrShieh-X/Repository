@@ -4,13 +4,13 @@
 20210522 ：
 颠覆大部分：不再要mysql，用put server的方式来进行操作
 
-每个账户独立一个空间，但chat_avatars通用，头像不要avatar_xxxxxxxxxx，直接avatar
+每个账户独立一个空间，但chat_avatars通用，存储头像：头像不要avatar_xxxxxxxxxx，直接avatar；或者不要这样存储在数据库的blob内，或者存储为数据库的序列化的Account里面的byte[]
 
 20210524：
 
 use mscr;
 drop table usersa;
-create table `usersa` (`number_id` int unsigned not null,`email` varchar(1000) not null,`account` varchar(1000) not null,`password` varchar(1000) not null,`avatar` mediumblob,`messages` text(4294967295),`nickname` char(128),`gender` enum('male','female'),`biography` varchar(512),`friends` text(65535),`token` char(255),`blocked_users` text(65535),`registered_time` bigint unsigned not null,`friends_add_applications` text(65535),`device_id` char(32),`device_model` char(255),`logged_in_devices` text(4000),PRIMARY KEY(number_id));
+create table `usersa` (`number_id` int unsigned not null,`email` varchar(1024) not null,`account` varchar(20) not null,`password` varchar(16) not null,`avatar` mediumblob,`messages` text(4294967295),`nickname` char(128),`gender` enum('male','female'),`biography` varchar(512),`friends` text(65535),`token` char(255),`blocked_users` text(65535),`registered_time` bigint not null,`friends_add_applications` text(65535),`device_id` char(64),`device_model` char(255),`logged_in_devices` text(4000),PRIMARY KEY(number_id));
 
                 pre.setLong(1, 3553413882L);
                 pre.setString(2,"3553413882@qq.com");
@@ -36,7 +36,9 @@ create table `usersa` (`number_id` int unsigned not null,`email` varchar(1000) n
 
 blocked_users，添加好友时查看对方的blocked_users是否有自己，有的话不给显示
 
-添加好友先检测对方的黑名单有没有自己（在服务器），有的话服务器不执行操作（不返回任何东西），限制添加好友的最大数量为5000，因为：friends最大65536，一个number_id最大有10位数，加上一对双引号，和一个逗号，等于13，(65535-2（jsonarray开头和结束的中括号）)/13=5041，为了某些特殊情况，所以就5000
+添加好友先检测对方的黑名单有没有自己（在服务器），有的话服务器不执行操作（不返回任何东西），限制添加好友的最大数量为1000/*，因为：friends最大65536，一个number_id最大有10位数（unsigned最大值4294967295），加上一对双引号，和一个逗号，等于13，(65535-2（jsonarray开头和结束的中括号）)/13=5041，为了某些特殊情况，所以就5000*/
+
+设置头像时限制大小（16M？）
 
 获得别人的information，服务器看看对方的黑名单有没有，没有的话给他，有的话不给，当作这个账户已注销
 
@@ -73,11 +75,11 @@ recyclerView滑动消失，viewHolder.setIsRecyclable(false); | bbs.csdn.net/top
 
 二维码名片（不要url，要自己的内容 | 要url，让别人进的去 | 要个scheme）推荐scheme
 
-（？）单设备登录，其他设备登录自己要自动退出
+单设备登录，其他设备登录自己要自动退出
 
 进去再连接服务器
 
-账号离线存储，用序列化的Account，包括别人的，序列化的User或information.json，Account（extends User）：存储自己的信息包括一些api，可以进行操作；User：存储别人的信息，不包括操作的api
+账号离线存储，用序列化的Account，包括别人的，序列化的User或information.json，Account（extends User）：存储自己的信息包括一些api，可以进行操作；User：存储别人的信息，不包括操作的api。序列化：放在database文件内
 
 （？）更改邮箱
 
@@ -123,7 +125,7 @@ public class ChatsListRecyclerList extends ChatsListProvider<RecyclerView>
 logged_in_devices存储登录过该账户的设备，是一个jsonarray，里面的jsonobject包含：imei(device_id)，model，最后一次登录时间（不是使用token的时间，而是在登录界面登录的时间）
 
 登录部分：{
-	if(登录时，logged_in_devices里面没有当前设备的imei){
+	if(登录时（在已经登录的设备验证成功了），logged_in_devices里面没有当前设备的imei){
 		if(logged_in_devices的string的bytes的长度>=3500){
 			删除jsonarray的时间最早的jsonobject；
 		}
@@ -133,7 +135,7 @@ logged_in_devices存储登录过该账户的设备，是一个jsonarray，里面
 {
 ---------------开始---------------
 要给服务器imei(device_id)，账号和密码
-服务器：收到imei，检查imei和sql的imei是否一致，如果一致，直接登录，不一致：叫服务器检测logged_in_devices是否有本机的imei，有的话：修改device_model、充值token并返回token，没有：更改返回已在新设备登录，要验证：
+服务器：收到imei，检查imei和sql的imei是否一致，如果一致，直接登录，不一致：叫服务器检测logged_in_devices是否有本机的imei，有的话：修改device_model、重置token并返回token，没有：更改返回已在新设备登录，要验证：
 1.叫当前登录了的设备授权：
 告诉服务器我要这样做（json需要imei和model，为了已经登录了的设备同意后，服务器修改imei和model），服务器要弄一个命令标识，问客户端是否是否授权（要显示授权的设备model），客户端弄了要返回（imei（告诉服务器我就是我，不是别人）和标识），服务器收到了要修改imei和model，修改完成用同一个标识叫客户端退出登录（要说型号），要返回成功或失败（是否授权）
 
@@ -143,10 +145,6 @@ logged_in_devices存储登录过该账户的设备，是一个jsonarray，里面
 a叫服务器弄（发送imei和型号），服务器收到之后，弄一个命令标识a，二维码（二维码包括新设备型号和命令标识a），返回给a，给b扫，b扫了后，告诉服务器（本机imei（告诉服务器我就是b）、标识a），我要授权，然后服务器收到了要修改imei和model，修改完成用同一个标识叫b退出登录（要说型号），要返回成功或失败（是否授权）
 ---------------结束---------------
 }
-
-登录时，客户端要把账号或邮箱变成小写再发给服务器，要发model和imei
-
-切换主题和语言要像MT管理器一样马上切换，不要重启，切换主题试一下修改主题之后马上recreate()（修改语言或主题也生效）
 
 newIdea（多线程处理文件或下载文件）：{
 弄一个bean：ExecutesFileSingleBytes：
@@ -168,6 +166,26 @@ interface：OnExecutedBytes：
 存储聊天记录的文件是要jsonobject不要开头和结尾的{和}，写入时直接写,"key":"value"，读取时给开头和结尾加上{和}在解析jsonobject。进入程序就开多线程来解析，解析完存储成全局的Map（Integer（numberId），List<MessageItem>），要读取该Map时用一个方法，此方法检测这个map是否为空，否的话返回该Map，是为空的话多线程解析文件，注意线程要synchronized。每次发送聊天都要在这个Map的对应的List<MessageItem>添加该message，也要把该message写入到文件内。进入ChatScreen时不要解析文件来获得聊天记录，浪费时间，要那个Map里的List<MessageItem>
 
 四张照片：亮主题底部导航；亮主题左侧滑出导航；暗主题底部导航；暗主题左侧滑出导航
+
+friends里的object要存储添加时间（毫秒）
+
+新功能：消息转发，这个转发不是说自己手动转发而是自动转发，转发者只能是一个人，不能多个人，收到消息时，检测该账号的“新消息转移”有没有设置一个用户的number_id（判断是否为0），没有的话只发送到客户端，有的话这个客户端和指定的转移客户端也要发送这条消息
+
+
+
+
+
+
+
+
+
+
+
+
+
+//登录时，客户端要把账号或邮箱变成小写再发给服务器（不用了，在sql的where不分大小写也能获得数据），要发model和imei
+
+//切换主题和语言要像MT管理器一样马上切换，不要重启，切换主题试一下修改主题之后马上recreate()（修改语言或主题也生效）
 
 //新界面：“我”（暂名），有自己的信息（头像、昵称、账号）、设置
 
