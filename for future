@@ -10,25 +10,7 @@
 
 use mscr;
 drop table usersa;
-create table `usersa` (`number_id` int unsigned not null,`email` varchar(1024) not null,`account` varchar(20) not null,`password` varchar(16) not null,`avatar` mediumblob,`messages` text(4294967295),`nickname` char(128),`gender` enum('male','female'),`biography` varchar(512),`friends` text(65535),`token` char(255),`blocked_users` text(65535),`registered_time` bigint not null,`friends_add_applications` text(65535),`device_id` char(64),`device_model` char(255),`logged_in_devices` text(4000),PRIMARY KEY(number_id));
-
-                pre.setLong(1, 3553413882L);
-                pre.setString(2,"3553413882@qq.com");
-                pre.setString(3,"mrshiehx");
-                pre.setString(4,"wwwwwww");
-                pre.setBinaryStream(5,null);
-                pre.setString(6,"{messages}");
-                pre.setString(7,"MrShiehX");
-                pre.setString(8,"FEMALE");
-                pre.setString(9,"WHAT IS UP");
-                pre.setString(10,"[FRIENDS]");
-                pre.setString(11,"TOKEN");
-                pre.setString(12,"[BLOCKED_USERS]");
-                pre.setLong(13,System.currentTimeMillis());
-                pre.setString(14,"[FRIENDS_APP_APPLICATIONS]");
-                pre.setString(15,"device_id");
-                pre.setString(16,"DEVICE MODEL");
-                pre.setString(17,"[LOGGED IN DEVICE IMEIS]");
+create table `usersa` (`number_id` int unsigned not null,`email` varchar(1024) not null,`account` varchar(20) not null,`password` varchar(16) not null,`avatar` mediumblob,`messages` text(4294967295),`nickname` char(128),`gender` enum('male','female'),`biography` varchar(512),`friends` text(65535),`token` varchar(255),`blocked_users` text(65535),`registered_time` bigint not null,`friends_add_applications` text(65535),`device_id` varchar(64),`device_model` varchar(255),`logged_in_devices` text(4096),`do_not_show_announcements_again` text(4294967295),PRIMARY KEY(number_id));
 
 执行操作时看看对方的黑名单有没有自己，没有的话执行，有的话不执行，当这个账户已注销
 
@@ -171,9 +153,18 @@ friends里的object要存储添加时间（毫秒）
 
 新功能：消息转发，这个转发不是说自己手动转发而是自动转发，转发者只能是一个人，不能多个人，收到消息时，检测该账号的“新消息转移”有没有设置一个用户的number_id（判断是否为0），没有的话只发送到客户端，有的话这个客户端和指定的转移客户端也要发送这条消息
 
+公告功能：{
+	公告存储：{
+		序列化的Announcement，存储在服务器，定时手动删除一些旧的
+	}
+	公告分类：FOR_EVERYONE：{
+		是否已读，并选择不再提示，存储在一个新的sharedpreferences；每次进入程序时，下载服务器的所有FOR_EVERYONE公告（一个jsonarray，里面的jsonobject：包含公告时间，确定是哪一个公告的序号），检测哪些设置了不再显示，排除他们，剩下的按公告发布时间逐个显示
+	}、FOR_LOGGED_USERS：{
+		 登录了才显示，（登录的用户）每次进入时，都下载服务器的全部FOR_LOGGED_IN_USERS的公告，显示那些没有设置不再显示的公告，如果这些公告显示了之后也设置了不再显示，那就告诉服务器（用一个jsonobject，包括：token、公告id、CODE），服务器收到了就在账户的do_not_show_announcements_again（jsonarray，暂时没有自清系统）里添加这个公告的ordinal（序号）
+	}
+}
 
-
-
+设置里可以看mscr的全部公告，包括for_everyone&for_logged_in_users，离线时读取本地文件，在线时先读取本地的，再开线程下载服务器的，再更新显示的listview
 
 
 
@@ -222,3 +213,22 @@ operate方法：{
 //客户端收到jsonobject，如果errorCode==0，继续执行，如果errorCode!=0，就通过错误代码从map内获得ErrorHandler，执行其handle方法，最后return;这个方法（结束这个方法）
 }
 }
+
+
+//pre.setLong(1, 3553413882L);
+//pre.setString(2,"3553413882@qq.com");
+//pre.setString(3,"mrshiehx");
+//pre.setString(4,"wwwwwww");
+//pre.setBinaryStream(5,null);
+//pre.setString(6,"{messages}");
+//pre.setString(7,"MrShiehX");
+//pre.setString(8,"FEMALE");
+//pre.setString(9,"WHAT IS UP");
+//pre.setString(10,"[FRIENDS]");
+//pre.setString(11,"TOKEN");
+//pre.setString(12,"[BLOCKED_USERS]");
+//pre.setLong(13,System.currentTimeMillis());
+//pre.setString(14,"[FRIENDS_APP_APPLICATIONS]");
+//pre.setString(15,"device_id");
+//pre.setString(16,"DEVICE MODEL");
+//pre.setString(17,"[LOGGED IN DEVICE IMEIS]");
