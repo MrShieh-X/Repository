@@ -166,10 +166,12 @@ friends里的object要存储添加时间（毫秒）
 
 设置里可以看mscr的全部公告，包括for_everyone&for_logged_in_users，离线时读取本地文件，在线时先读取本地的，再开线程下载服务器的，再更新显示的listview
 
+StartActivity做什么：加载本地chats，检查token是否正确，若不正确服务器要返回新设备deviceModel，叫它重新登录
+MainActivity做什么：加载chats，更新自己和别人的信息，用thread，下载离线信息
 
+HTTP传输大数据：server to client：client问server要下载什么，服务器收到后，用一个算法，计算一个文件拆分成几个最合适，返回这个数据，client收到了之后用for循环，问服务器，每次循环都要带上要下载第几部分的序号，服务器按照算法马上读取相应部分并以string的形式返回；client to server：C发个JSONObject给S，要带上verification，C存好verification，S在Map<String（verification），SegmentTransmission（一个BEAN，里面有：String verification，int number（总部分数），Map<Integer(ordinal),byte[](partData)>）>还有一个start方法，是一个timer，五分钟之后从Map<String，SegmentTransmission>delete（verification（String））、/*add（int ordinal，byte[]partData）方法（在Map<Integer(ordinal),byte[](partData)>里添加partData ，然后检测如果ordinal等于number）*/byte[]getData()方法，按顺序排列Map<Integer(ordinal),byte[](partData)>，组合全部byte[]并返回，最后在Map<String，SegmentTransmission>delete（verification（String）；在client，传输时，如果遇到错误，马上停止，并报错
 
-
-
+发送验证码用线程
 
 
 
