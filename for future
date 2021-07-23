@@ -1,3 +1,8 @@
+修改authenticate_when_login_on_strange_device为true
+完善manageloggedindevicesactivity
+
+
+
 （？）：不确定要不要弄
 命令标识：毫秒或者其他，为了服务器叫客户端做事情或者客户端叫服务器做事情的临时标识，类似于叫服务器发文件，然后接收时为了准确是哪一个的命令的标识
 
@@ -171,10 +176,19 @@ MainActivity做什么：加载chats，更新自己和别人的信息，用thread
 
 HTTP传输大数据：server to client：client问server要下载什么，服务器收到后，用一个算法，计算一个文件拆分成几个最合适，返回这个数据，client收到了之后用for循环，问服务器，每次循环都要带上要下载第几部分的序号，服务器按照算法马上读取相应部分并以string的形式返回；client to server：C发个JSONObject给S，要带上verification，C存好verification，S在Map<String（verification），SegmentTransmission（一个BEAN，里面有：String verification，int number（总部分数），Map<Integer(ordinal),byte[](partData)>）>还有一个start方法，是一个timer，五分钟之后从Map<String，SegmentTransmission>delete（verification（String））、/*add（int ordinal，byte[]partData）方法（在Map<Integer(ordinal),byte[](partData)>里添加partData ，然后检测如果ordinal等于number）*/byte[]getData()方法，按顺序排列Map<Integer(ordinal),byte[](partData)>，组合全部byte[]并返回，最后在Map<String，SegmentTransmission>delete（verification（String）；在client，传输时，如果遇到错误，马上停止，并报错
 
-发送验证码用线程
+发送验证码用线程，防止卡住
+
+在设置里设置authenticate_when_login_on_strange_device，关闭需要邮箱验证码，开启不要（不能直接用setOperation，要单独一个AuthenticateWhenLoginOnStrangeDeviceOperation或SetWithAuthenticateOperation，要用token）
+
+重新design主界面，看一下preference_material.xml
+
+删除缓存
+
+内存管理
 
 
 
+//token加密
 
 //登录时，客户端要把账号或邮箱变成小写再发给服务器（不用了，在sql的where不分大小写也能获得数据），要发model和imei
 
@@ -215,6 +229,8 @@ operate方法：{
 //客户端收到jsonobject，如果errorCode==0，继续执行，如果errorCode!=0，就通过错误代码从map内获得ErrorHandler，执行其handle方法，最后return;这个方法（结束这个方法）
 }
 }
+
+//User和Account，getString、getLong、getBytes后如果成功了就要保存到本地，更新本地的文件
 
 
 //pre.setLong(1, 3553413882L);
