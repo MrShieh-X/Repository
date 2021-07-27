@@ -1,8 +1,3 @@
-修改authenticate_when_login_on_strange_device为true
-完善manageloggedindevicesactivity
-
-
-
 （？）：不确定要不要弄
 命令标识：毫秒或者其他，为了服务器叫客户端做事情或者客户端叫服务器做事情的临时标识，类似于叫服务器发文件，然后接收时为了准确是哪一个的命令的标识
 
@@ -29,8 +24,6 @@ blocked_users，添加好友时查看对方的blocked_users是否有自己，有
 
 获得别人的information，服务器看看对方的黑名单有没有，没有的话给他，有的话不给，当作这个账户已注销
 
-一年才能修改一个账号，修改之前要输入密码，至于修改之后好友的好友列表可能没有这个人的问题，请看number_id，至于时间，获得服务器的时间
-
 token，一串用特殊手段生成出来的字符串，以后登录之后不用存储账号密码，账号密码put to server之后获得token，存储它，下次对性别、昵称、个性签名、friends、发送消息操作时不用账号密码，用token；获得别人的性别、昵称、个性签名用账号，不用token；连接communicator时发送埋token，以服务器接收消息时遍历它，找到session；新的密码，新的token
 
 服务器不要map，要两个list
@@ -54,8 +47,6 @@ recyclerView滑动消失，viewHolder.setIsRecyclable(false); | bbs.csdn.net/top
 
 后台通知，杀了后台也行那种，youtube可以，但它是谷歌的，有谷歌的相关服务
 
-弄个Account类，里面又有update和get方法，昵称、性别、个性签名等
-
 消息内的URL，弄个像微信一样的蓝色或者其他的明显的标志，点击到默认浏览器打开，或者不转跳，在mscr内直接调用浏览器的组件访问该URL
 
 弄群聊
@@ -67,8 +58,6 @@ recyclerView滑动消失，viewHolder.setIsRecyclable(false); | bbs.csdn.net/top
 进去再连接服务器
 
 账号离线存储，用序列化的Account，包括别人的，序列化的User或information.json，Account（extends User）：存储自己的信息包括一些api，可以进行操作；User：存储别人的信息，不包括操作的api。序列化：放在database文件内
-
-（？）更改邮箱
 
 多账户登录，随便切换
 
@@ -107,18 +96,7 @@ public class ChatsListRecyclerList extends ChatsListProvider<RecyclerView>
 
 每次进入以及执行需要token的操作，都要检测token在服务器是否存在，在这个JSONObject内存放账号，以免如果被别的设备登录，可以使用账号获得已经登录的设备的名称并返回；不存在就說账户不存在，退出登录；存在就返回新设备的model
 
-本地不存密码，只存账号与token
-
-logged_in_devices存储登录过该账户的设备，是一个jsonarray，里面的jsonobject包含：imei(device_id)，model，最后一次登录时间（不是使用token的时间，而是在登录界面登录的时间）
-
-登录部分：{
-	if(登录时（在已经登录的设备验证成功了），logged_in_devices里面没有当前设备的imei){
-		if(logged_in_devices的string的bytes的长度>=3500){
-			删除jsonarray的时间最早的jsonobject；
-		}
-	}
-}
-,
+登录部分：
 {
 ---------------开始---------------
 要给服务器imei(device_id)，账号和密码
@@ -158,6 +136,50 @@ friends里的object要存储添加时间（毫秒）
 
 新功能：消息转发，这个转发不是说自己手动转发而是自动转发，转发者只能是一个人，不能多个人，收到消息时，检测该账号的“新消息转移”有没有设置一个用户的number_id（判断是否为0），没有的话只发送到客户端，有的话这个客户端和指定的转移客户端也要发送这条消息
 
+StartActivity做什么：加载本地chats，检查token是否正确，若不正确服务器要返回新设备deviceModel，叫它重新登录
+MainActivity做什么：加载chats，更新自己和别人的信息，用thread，下载离线信息
+
+HTTP传输大数据：server to client：client问server要下载什么，服务器收到后，用一个算法，计算一个文件拆分成几个最合适，返回这个数据，client收到了之后用for循环，问服务器，每次循环都要带上要下载第几部分的序号，服务器按照算法马上读取相应部分并以string的形式返回；client to server：C发个JSONObject给S，要带上verification，C存好verification，S在Map<String（verification），SegmentTransmission（一个BEAN，里面有：String verification，int number（总部分数），Map<Integer(ordinal),byte[](partData)>）>还有一个start方法，是一个timer，五分钟之后从Map<String，SegmentTransmission>delete（verification（String））、/*add（int ordinal，byte[]partData）方法（在Map<Integer(ordinal),byte[](partData)>里添加partData ，然后检测如果ordinal等于number）*/byte[]getData()方法，按顺序排列Map<Integer(ordinal),byte[](partData)>，组合全部byte[]并返回，最后在Map<String，SegmentTransmission>delete（verification（String）；在client，传输时，如果遇到错误，马上停止，并报错
+
+发送验证码用线程，防止卡住
+
+重新design主界面，看一下preference_material.xml
+
+删除缓存
+
+内存管理
+
+更改、获得头像：用communicator
+
+
+
+
+
+
+
+
+
+
+
+
+
+//英文验证码发给bntoylort会报错554 DT:SPM 发送的邮件内容包含了未被许可的信息，或被系统识别为垃圾邮件。请检查是否有用户发送病毒或者垃圾邮件
+
+//弄个Account类，里面又有update和get方法，昵称、性别、个性签名等
+
+//本地不存密码，只存账号与token
+
+//logged_in_devices存储登录过该账户的设备，是一个jsonarray，里面的jsonobject包含：imei(device_id)，model，最后一次登录时间（不是使用token的时间，而是在登录界面登录的时间）
+
+/*{
+	if(登录时（在已经登录的设备验证成功了），logged_in_devices里面没有当前设备的imei){
+		if(logged_in_devices的string的bytes的长度>=3500){
+			删除jsonarray的时间最早的jsonobject；
+		}
+	}
+}*/
+
+/*
 公告功能：{
 	公告存储：{
 		序列化的Announcement，存储在服务器，定时手动删除一些旧的
@@ -167,26 +189,13 @@ friends里的object要存储添加时间（毫秒）
 	}、FOR_LOGGED_USERS：{
 		 登录了才显示，（登录的用户）每次进入时，都下载服务器的全部FOR_LOGGED_IN_USERS的公告，显示那些没有设置不再显示的公告，如果这些公告显示了之后也设置了不再显示，那就告诉服务器（用一个jsonobject，包括：token、公告id、CODE），服务器收到了就在账户的do_not_show_announcements_again（jsonarray，暂时没有自清系统）里添加这个公告的ordinal（序号）
 	}
-}
+}*/
 
-设置里可以看mscr的全部公告，包括for_everyone&for_logged_in_users，离线时读取本地文件，在线时先读取本地的，再开线程下载服务器的，再更新显示的listview
+//设置里可以看mscr的全部公告，包括for_everyone&for_logged_in_users，离线时读取本地文件，在线时先读取本地的，再开线程下载服务器的，再更新显示的listview
 
-StartActivity做什么：加载本地chats，检查token是否正确，若不正确服务器要返回新设备deviceModel，叫它重新登录
-MainActivity做什么：加载chats，更新自己和别人的信息，用thread，下载离线信息
+//在设置里设置authenticate_when_login_on_strange_device，关闭需要邮箱验证码，开启不要（不能直接用setOperation，要单独一个AuthenticateWhenLoginOnStrangeDeviceOperation或SetWithAuthenticateOperation，要用token）
 
-HTTP传输大数据：server to client：client问server要下载什么，服务器收到后，用一个算法，计算一个文件拆分成几个最合适，返回这个数据，client收到了之后用for循环，问服务器，每次循环都要带上要下载第几部分的序号，服务器按照算法马上读取相应部分并以string的形式返回；client to server：C发个JSONObject给S，要带上verification，C存好verification，S在Map<String（verification），SegmentTransmission（一个BEAN，里面有：String verification，int number（总部分数），Map<Integer(ordinal),byte[](partData)>）>还有一个start方法，是一个timer，五分钟之后从Map<String，SegmentTransmission>delete（verification（String））、/*add（int ordinal，byte[]partData）方法（在Map<Integer(ordinal),byte[](partData)>里添加partData ，然后检测如果ordinal等于number）*/byte[]getData()方法，按顺序排列Map<Integer(ordinal),byte[](partData)>，组合全部byte[]并返回，最后在Map<String，SegmentTransmission>delete（verification（String）；在client，传输时，如果遇到错误，马上停止，并报错
-
-发送验证码用线程，防止卡住
-
-在设置里设置authenticate_when_login_on_strange_device，关闭需要邮箱验证码，开启不要（不能直接用setOperation，要单独一个AuthenticateWhenLoginOnStrangeDeviceOperation或SetWithAuthenticateOperation，要用token）
-
-重新design主界面，看一下preference_material.xml
-
-删除缓存
-
-内存管理
-
-
+//一年才能修改一个账号，修改之前要输入密码，至于修改之后好友的好友列表可能没有这个人的问题，请看number_id，至于时间，获得服务器的时间
 
 //token加密
 
@@ -217,6 +226,7 @@ HTTP传输大数据：server to client：client问server要下载什么，服务
 
 //token需要的内容：imei(device_id)、账号、密码、number_id
 
+//（？）更改邮箱
 
 关于put to server、错误处理等：{
 //server弄一个map（Integer（存放CODE）,Operation（interface，方法：String（返回给client的内容） operate(JSONObject jsonObject);）），收到operate时解析到code，如果这个code对应的Operation为null，返回说没有这样的操作，如果有，就在map里获得Operation，执行operate方法，此方法返回值（JSONObject，String）要返回给client。
