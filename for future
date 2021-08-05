@@ -1,14 +1,7 @@
-转发器速度慢，会在write 的19秒后自动断开连接
-
-
 （？）：不确定要不要弄
 命令标识：毫秒或者其他，为了服务器叫客户端做事情或者客户端叫服务器做事情的临时标识，类似于叫服务器发文件，然后接收时为了准确是哪一个的命令的标识
 
 20210522 ：
-颠覆大部分：不再要mysql，用put server的方式来进行操作
-
-每个账户独立一个空间，但chat_avatars通用，存储头像：头像不要avatar_xxxxxxxxxx，直接avatar；或者不要这样存储在数据库的blob内，或者存储为数据库的序列化的Account里面的byte[]
-
 20210524：
 
 use mscr;
@@ -17,13 +10,10 @@ create table `usersa` (`number_id` int unsigned not null,`email` varchar(1024) n
 
 执行操作时看看对方的黑名单有没有自己，没有的话执行，有的话不执行，当这个账户已注销
 
-绝对不能返回密码。
 
 blocked_users，添加好友时查看对方的blocked_users是否有自己，有的话不给显示
 
 添加好友先检测对方的黑名单有没有自己（在服务器），有的话服务器不执行操作（不返回任何东西），限制添加好友的最大数量为1000/*，因为：friends最大65536，一个number_id最大有10位数（unsigned最大值4294967295），加上一对双引号，和一个逗号，等于13，(65535-2（jsonarray开头和结束的中括号）)/13=5041，为了某些特殊情况，所以就5000*/
-
-设置头像时限制大小（16M？）
 
 获得别人的information，服务器看看对方的黑名单有没有，没有的话给他，有的话不给，当作这个账户已注销
 
@@ -152,12 +142,13 @@ HTTP传输大数据：server to client：client问server要下载什么，服务
 
 内存管理
 
-更改、获得头像：用communicator
-
-发送文件（1g,1024*1024*1024）和图片（128m）和头像（12m）限制大小
+?????????????????????发送文件（1g,1024*1024*1024）和图片（128m）和头像（12m）限制大小
 
 离线mscr start界面难看
 
+只要登录了，onResume、onNetworkConnect重新连接服务器，如果Communciator连接了服务器，onNetworkDisconnect要断开连接
+
+获得公告时间过长，要不进到MainActivity再获得公告
 
 
 
@@ -167,6 +158,18 @@ HTTP传输大数据：server to client：client问server要下载什么，服务
 
 
 
+
+
+
+//更改、获得头像：用communicator
+
+//设置头像时限制大小（16M？）
+
+//颠覆大部分：不再要mysql，用put server的方式来进行操作
+
+//每个账户独立一个空间，但chat_avatars通用，存储头像：头像不要avatar_xxxxxxxxxx，直接avatar；或者不要这样存储在数据库的blob内，或者存储为数据库的序列化的Account里面的byte[]
+
+//绝对不能返回密码。
 
 //英文验证码发给bntoylort会报错554 DT:SPM 发送的邮件内容包含了未被许可的信息，或被系统识别为垃圾邮件。请检查是否有用户发送病毒或者垃圾邮件
 
