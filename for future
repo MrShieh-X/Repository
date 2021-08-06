@@ -1,3 +1,10 @@
+RSA加密
+
+//每次进入以及执行需要token的操作，都要检测token在服务器是否存在，在这个JSONObject内存放账号，以免如果被别的设备登录，可以使用账号获得已经登录的设备的名称并返回；不存在就說账户不存在，退出登录；存在就返回新设备的model
+
+
+
+
 （？）：不确定要不要弄
 命令标识：毫秒或者其他，为了服务器叫客户端做事情或者客户端叫服务器做事情的临时标识，类似于叫服务器发文件，然后接收时为了准确是哪一个的命令的标识
 
@@ -8,14 +15,12 @@ use mscr;
 drop table usersa;
 create table `usersa` (`number_id` int unsigned not null,`email` varchar(1024) not null,`account` varchar(20) not null,`password` varchar(16) not null,`avatar` mediumblob,`messages` text(4294967295),`nickname` char(128),`gender` enum('male','female'),`biography` varchar(512),`friends` text(65535),`token` varchar(255),`blocked_users` text(65535),`registered_time` bigint not null,`friends_add_applications` text(65535),`device_id` varchar(64),`device_model` varchar(255),`logged_in_devices` text(4096),`do_not_show_announcements_again` text(4294967295),PRIMARY KEY(number_id));
 
-执行操作时看看对方的黑名单有没有自己，没有的话执行，有的话不执行，当这个账户已注销
 
 
 blocked_users，添加好友时查看对方的blocked_users是否有自己，有的话不给显示
 
 添加好友先检测对方的黑名单有没有自己（在服务器），有的话服务器不执行操作（不返回任何东西），限制添加好友的最大数量为1000/*，因为：friends最大65536，一个number_id最大有10位数（unsigned最大值4294967295），加上一对双引号，和一个逗号，等于13，(65535-2（jsonarray开头和结束的中括号）)/13=5041，为了某些特殊情况，所以就5000*/
 
-获得别人的information，服务器看看对方的黑名单有没有，没有的话给他，有的话不给，当作这个账户已注销
 
 token，一串用特殊手段生成出来的字符串，以后登录之后不用存储账号密码，账号密码put to server之后获得token，存储它，下次对性别、昵称、个性签名、friends、发送消息操作时不用账号密码，用token；获得别人的性别、昵称、个性签名用账号，不用token；连接communicator时发送埋token，以服务器接收消息时遍历它，找到session；新的密码，新的token
 
@@ -60,8 +65,6 @@ recyclerView滑动消失，viewHolder.setIsRecyclable(false); | bbs.csdn.net/top
 
 发送消息检查对方账户的好友列表有没有自己，没有就说删了
 
-发送消息检查对方账户的黑名单有没有自己，有就说拉黑了
-
 为了方便随时更换chatscreen的chatlist的view类型，弄一个ChatsListProvider，代码：
 public abstract class ChatsListProvider<V> {
     public V view;
@@ -86,8 +89,6 @@ public class ChatsListRecyclerList extends ChatsListProvider<RecyclerView>
 调用mainscreen，chatscreen之类的messageReceived，改用interface，不要((MainScreen...)context).messageReceived();
 
 不要communicator.setContext，麻烦
-
-每次进入以及执行需要token的操作，都要检测token在服务器是否存在，在这个JSONObject内存放账号，以免如果被别的设备登录，可以使用账号获得已经登录的设备的名称并返回；不存在就說账户不存在，退出登录；存在就返回新设备的model
 
 登录部分：
 {
@@ -142,7 +143,7 @@ HTTP传输大数据：server to client：client问server要下载什么，服务
 
 内存管理
 
-?????????????????????发送文件（1g,1024*1024*1024）和图片（128m）和头像（12m）限制大小
+?????????????????????发送文件（1g,1024*1024*1024）和图片（128m）和
 
 离线mscr start界面难看
 
@@ -150,6 +151,7 @@ HTTP传输大数据：server to client：client问server要下载什么，服务
 
 获得公告时间过长，要不进到MainActivity再获得公告
 
+发送消息检查对方账户的黑名单有没有自己，有就说拉黑了
 
 
 
@@ -160,6 +162,11 @@ HTTP传输大数据：server to client：client问server要下载什么，服务
 
 
 
+
+
+//执行操作时看看对方的黑名单有没有自己，没有的话执行，有的话不执行，当这个账户已注销
+
+//获得别人的information，服务器看看对方的黑名单有没有，没有的话给他，有的话不给，当作这个账户已注销
 
 //更改、获得头像：用communicator
 
